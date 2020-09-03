@@ -6,8 +6,8 @@ const ActiveUser = require('./models/UserModel')
 const app = express();
 const server = app.listen(process.env.PORT, async function () {
     console.log(`Listening on port ${process.env.PORT}`);
-    const activeUsers = await ActiveUser.find()
-    console.log(activeUsers)
+
+
 });
 
 mongoose.connect('mongodb://localhost:27017/chat', {
@@ -21,25 +21,27 @@ const io = socket(server);
 
 
 io.on("connection", function (socket) {
-    console.log("Made socket connection");
-    socket.on("online", async (options) => {
+    console.log("connection");
+    socket.on("new user", async (options) => {
      try {
          if (!await ActiveUser.findOne({username:options.username})) {
              const user = await new ActiveUser({socketId:socket.id, username:options.username})
              user.save()
          } else {
-             await ActiveUser.findOneAndUpdate({username:options.username, socketId:socket.id})
+             await ActiveUser.findOneAndUpdate({username:options.username},{username:options.username, socketId:socket.id})
          }
          const activeUsers = await ActiveUser.find()
-
-         console.log(activeUsers)
-         io.emit("online", activeUsers);
+         io.emit("new user", activeUsers);
      }catch (e) {
          console.log(e)
      }
     });
-    socket.on("disconnect", () => {
-        activeUsers.delete(socket.userId);
-        io.emit("disconnected", socket.userId);
+    socket.on("disconnect", async (options) => {
+       const user = await ActiveUser.findOneAndDelete({socketId:socket.id}, function (err) {
+            if(err) console.log(err);
+            console.log("Successful deletion");
+        })
+        console.log(user)
+        // io.emit(user disconnected");
     });
 });
