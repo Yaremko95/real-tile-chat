@@ -36,12 +36,15 @@ io.on("connection", function (socket) {
          console.log(e)
      }
     });
+    socket.on('sendMsg', (data) => {
+        io.to(data.id).emit('receiveMsg', data)
+    })
     socket.on("disconnect", async (options) => {
        const user = await ActiveUser.findOneAndDelete({socketId:socket.id}, function (err) {
             if(err) console.log(err);
             console.log("Successful deletion");
         })
         console.log(user)
-        // io.emit(user disconnected");
+        io.emit('quit', socket.id)
     });
 });
